@@ -1,0 +1,97 @@
+#!/bin/sh
+#
+# Log file pattern detector plugin for Nagios
+#
+# Usage: ./check_logtail -F log_file -w warning -c critical
+#
+# Description:
+#
+
+# Paths to commands used in this script.  These
+# may have to be modified to match your system setup.
+
+PATH="/usr/bin:/usr/sbin:/bin:/sbin"
+
+PROGNAME=`basename $0`
+PROGPATH=`echo $0 | sed -e 's,[\\/][^\\/][^\\/]*$,,'`
+TMP=/var/tmp/
+
+#. $PROGPATH/utils.sh
+. /usr/local/libexec/nagios/utils.sh
+
+print_usage() {
+    echo "Usage: $PROGNAME -F logfile -c critical -w warning"
+    echo "Usage: $PROGNAME --help"
+}
+
+print_help() {
+    echo ""
+    print_usage
+    echo ""
+    echo "Log file pattern detector plugin for Nagios"
+    echo ""
+    support
+}
+
+# Make sure the correct number of command line
+# arguments have been supplied
+
+if [ $# -lt 6 ]; then
+    print_usage
+    exit $STATE_UNKNOWN
+fi
+
+# Grab the command line arguments
+while test -n "$1"; do
+    case "$1" in
+        --help)
+            print_help
+            exit $STATE_OK
+            ;;
+        -h)
+            print_help
+            exit $STATE_OK
+            ;;
+        -F)
+            logfile=$2
+            shift
+            ;;
+        -w)
+            warn=$2
+            shift
+            ;;
+        -c)
+            crit=$2
+            shift
+            ;;
+        *)
+            echo "Unknown argument: $1"
+            print_usage
+            exit $STATE_UNKNOWN
+            ;;
+    esac
+    shift
+done
+
+if [ ! -e $logfile ]; then
+    $ECHO "Log check error: Log file $logfile does not exist!"
+    exit $STATE_UNKNOWN
+fi
+
+
+offset=`basename $logfile`.offset
+
+lines=`/usr/local/sbin/logtail -f $logfile -o${TMP}/$offset | wc -l`
+
+if [ $lines -gt $crit ]; then
+	$ECHO "WARNING: $logfile New lines: $lines"
+	exit $STATE_CRITICAL
+elif [ $lines -gt $warn ]; then
+	$ECHO "CRITICAL: $logfile New lines: $lines"
+	exit $STATE_WARNING
+else
+	$ECHO "OK: $logfile New lines: $lines"
+	exit $STATE_OK
+fi
+
+exit $STATE_UNKNOWN
