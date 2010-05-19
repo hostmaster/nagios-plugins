@@ -85,10 +85,10 @@ lines=`/usr/local/sbin/logtail -f $logfile -o${TMP}/$offset | wc -l`
 
 if [ $lines -gt $crit ]; then
 	$ECHO "WARNING: $logfile New lines: $lines"
-	exit $STATE_CRITICAL
+	exit $STATE_WARNING
 elif [ $lines -gt $warn ]; then
 	$ECHO "CRITICAL: $logfile New lines: $lines"
-	exit $STATE_WARNING
+	exit $STATE_CRITICAL
 else
 	$ECHO "OK: $logfile New lines: $lines"
 	exit $STATE_OK
