@@ -20,7 +20,7 @@ TMP=/var/tmp/
 . /usr/local/libexec/nagios/utils.sh
 
 print_usage() {
-    echo "Usage: $PROGNAME -F logfile -c critical -w warning"
+    echo "Usage: $PROGNAME -F logfile -c critical -w warning [ -v ] [ -e pattern ]"
     echo "Usage: $PROGNAME --help"
 }
 
@@ -40,6 +40,8 @@ if [ $# -lt 6 ]; then
     print_usage
     exit $STATE_UNKNOWN
 fi
+
+GREP="grep -E"
 
 # Grab the command line arguments
 while test -n "$1"; do
@@ -64,6 +66,13 @@ while test -n "$1"; do
             crit=$2
             shift
             ;;
+	-v)
+            GREP="$GREP -v"
+            ;;
+        -e)
+            pattern=$2
+            shift
+            ;;
         *)
             echo "Unknown argument: $1"
             print_usage
@@ -81,7 +90,11 @@ fi
 
 offset=`basename $logfile`.offset
 
-lines=`/usr/local/sbin/logtail -f $logfile -o${TMP}/$offset | wc -l`
+if [ -z "$pattern" ]; then
+	lines=`/usr/local/sbin/logtail -f $logfile -o${TMP}/$offset | wc -l`
+else
+	lines=`/usr/local/sbin/logtail -f $logfile -o${TMP}/$offset | $GREP -e "$pattern" | wc -l`
+fi
 
 if [ $lines -gt $crit ]; then
 	$ECHO "WARNING: $logfile New lines: $lines"
