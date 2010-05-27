@@ -97,10 +97,10 @@ else
 fi
 
 if [ $lines -gt $crit ]; then
-	$ECHO "WARNING: $logfile New lines: $lines"
+	$ECHO "CRITICAL: $logfile New lines: $lines"
 	exit $STATE_CRITICAL
 elif [ $lines -gt $warn ]; then
-	$ECHO "CRITICAL: $logfile New lines: $lines"
+	$ECHO "WARNING: $logfile New lines: $lines"
 	exit $STATE_WARNING
 else
 	$ECHO "OK: $logfile New lines: $lines"
