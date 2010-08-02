@@ -1,0 +1,85 @@
+#!/usr/local/bin/perl
+
+use strict;
+use warnings;
+
+use Nagios::Plugin;
+use File::Basename;
+use BSD::Sysctl qw(sysctl sysctl_exists sysctl_description);
+
+use vars qw($VERSION $PROGNAME  $verbose $warn $critical $timeout $sysctl);
+$VERSION = '1.0';
+
+# get the base name of this script for use in the examples
+$PROGNAME = basename($0);
+
+# Instantiate Nagios::Plugin object (the 'usage' parameter is mandatory)
+my $p = Nagios::Plugin->new(
+    usage => "Usage: %s [ -v|--verbose ] 
+    [ -c|--critical=<critical threshold> ] 
+    [ -w|--warning=<warning threshold> ]  
+    [ -s|--sysctl = <name>]",
+    version => $VERSION,
+    blurb => 'Nagios plugin to check FreeBSD sysctl values.',
+
+	extra => "
+
+THRESHOLDs for -w and -c are specified 'min:max' or 'min:' or ':max'
+(or 'max'). If specified '\@min:max', a warning status will be generated
+if the count *is* inside the specified range. "
+);
+
+
+# Define and document the valid command line options
+# usage, help, version, timeout and verbose are defined by default.
+
+$p->add_arg(
+	spec => 'warning|w=s',
+
+	help => 
+qq{-w, --warning=INTEGER:INTEGER
+   Minimum and maximum number of allowable sysctl, outside of which a
+   warning will be generated.  If omitted, no warning is generated.},
+
+);
+
+$p->add_arg(
+	spec => 'critical|c=s',
+	help => 
+qq{-c, --critical=INTEGER:INTEGER
+   Minimum and maximum number of the generated sysctl, outside of
+   which a critical will be generated. },
+);
+
+$p->add_arg(
+	spec => 'sysctl|s=s',
+	help => 
+qq{-s, --sysctl=NAME
+   Specify the sysctl name.},
+);
+
+# Parse arguments and process standard ones (e.g. usage, help, version)
+$p->getopts;
+
+# perform sanity checking on command line options
+unless ( defined $p->opts->sysctl )  {
+    $p->nagios_die(" invalid value supplied for the -s option " );
+}
+
+unless ( defined $p->opts->warning || defined $p->opts->critical ) {
+	$p->nagios_die(" you didn't supply a threshold argument " );
+}
+
+unless ( sysctl_exists($p->opts->sysctl) ) {
+	$p->nagios_die($p->opts->sysctl . ": sysctl name is not recognised by the system ");
+}
+
+my $sysctl = sysctl($p->opts->sysctl);
+my $desc = sysctl_description($p->opts->sysctl);
+print $p->opts->sysctl . ": $sysctl \n" if $p->opts->verbose;
+
+$p->nagios_exit( 
+	 return_code => $p->check_threshold($sysctl), 
+	 message => "$desc : $sysctl" 
+);
+
