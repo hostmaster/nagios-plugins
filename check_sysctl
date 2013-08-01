@@ -1,4 +1,6 @@
-#!/usr/local/bin/perl
+#! /usr/bin/env perl
+#
+# This plugin checks sysctl oid statistics in a FreeBSD kernel!    
 
 use strict;
 use warnings;
@@ -62,12 +64,12 @@ qq{-s, --sysctl=NAME
 $p->getopts;
 
 # perform sanity checking on command line options
-unless ( defined $p->opts->sysctl )  {
-    $p->nagios_die(" invalid value supplied for the -s option " );
+unless (defined $p->opts->sysctl) {
+    $p->nagios_die(" invalid value supplied for the -s option ");
 }
 
-unless ( defined $p->opts->warning || defined $p->opts->critical ) {
-	$p->nagios_die(" you didn't supply a threshold argument " );
+unless (defined $p->opts->warning || defined $p->opts->critical) {
+	$p->nagios_die(" you didn't supply a threshold argument ");
 }
 
 unless ( sysctl_exists($p->opts->sysctl) ) {
@@ -78,7 +80,7 @@ my $sysctl = sysctl($p->opts->sysctl);
 my $desc = sysctl_description($p->opts->sysctl);
 print $p->opts->sysctl . ": $sysctl \n" if $p->opts->verbose;
 
-$p->nagios_exit( 
+$p->nagios_exit(
 	 return_code => $p->check_threshold($sysctl), 
 	 message => "$desc : $sysctl" 
 );
